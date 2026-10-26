@@ -10,8 +10,6 @@ mod win32;
 use models::cube::{CUBE, CUBE_EDGES};
 use models::penguin::{PENGUIN, PENGUIN_FACES};
 
-use crate::point::Point;
-
 const WIDTH: usize = 800;
 const HEIGHT: usize = 800;
 const FPS: u64 = 120;
@@ -116,15 +114,6 @@ impl Canvas {
             fraction_horizontal * last_column,
             fraction_vertical * last_row,
         )
-    }
-
-    pub fn project_point(&mut self, point: &Point, color: u32, size: usize) {
-        self.draw_point_normalized(
-            point.x / (point.z + 1.0),
-            point.y / (point.z + 1.0),
-            color,
-            size,
-        );
     }
 }
 

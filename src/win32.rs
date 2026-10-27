@@ -207,9 +207,9 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: UINT, wp: WPARAM, lp: LPARAM)
             if !ptr.is_null() {
                 let state = &mut *ptr;
                 if delta > 0 {
-                    state.move_away_from_screen();
-                } else if delta < 0 {
                     state.move_towards_screen();
+                } else if delta < 0 {
+                    state.move_away_from_screen();
                 }
             }
             0

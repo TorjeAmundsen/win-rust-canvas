@@ -27,6 +27,7 @@ impl State {
 
     pub fn move_towards_screen(&mut self) {
         self.z_offset -= 0.1;
+        self.z_offset = self.z_offset.max(0.6);
     }
 
     pub fn increase_red(&mut self) {

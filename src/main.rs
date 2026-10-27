@@ -5,6 +5,7 @@ use std::{
 
 mod models;
 mod point;
+mod state;
 mod win32;
 
 use models::cube::{CUBE, CUBE_EDGES};
@@ -118,7 +119,14 @@ impl Canvas {
 }
 
 fn main() {
-    let mut window = win32::Window::new("Simple 3D software render", WIDTH, HEIGHT);
+    let mut state = state::State {
+        xz_angle: 0.0,
+        xz_velocity: std::f64::consts::PI / 2.0,
+        current_model_idx: 0,
+        z_offset: 1.0,
+    };
+
+    let mut window = win32::Window::new("Simple 3D software render", WIDTH, HEIGHT, &mut state);
 
     let mut canvas = Canvas {
         width: WIDTH,
@@ -128,13 +136,15 @@ fn main() {
 
     let interval = Duration::from_micros(1000000 / FPS);
     let mut next_tick = Instant::now();
-    let start_time = Instant::now();
+    let mut last_frame = Instant::now();
 
     while window.is_open() {
+        let now = Instant::now();
+        let delta_time = now - last_frame;
+        last_frame = now;
         next_tick += interval;
-        let elapsed_seconds = start_time.elapsed().as_secs_f64();
 
-        let angle = std::f64::consts::PI * elapsed_seconds / 2.0;
+        state.advance(delta_time.as_secs_f64());
 
         canvas.clear();
 
@@ -142,40 +152,43 @@ fn main() {
 
         // Render penguin
 
-        //         for (index, point) in PENGUIN.into_iter().enumerate() {
-        //             let mut rotated_point = point;
-        //             rotated_point.rotate_xz(angle);
-        //             let (normalized_x, normalized_y) = rotated_point.project();
-        //             screen_positions[index] = canvas.normalized_to_screen(normalized_x, normalized_y);
-        //         }
-        //
-        //         for [first_corner, second_corner, third_corner] in PENGUIN_FACES {
-        //             let triangle_edges = [
-        //                 (first_corner, second_corner),
-        //                 (second_corner, third_corner),
-        //                 (third_corner, first_corner),
-        //             ];
-        //
-        //             for (start_index, end_index) in triangle_edges {
-        //                 let (start_column, start_row) = screen_positions[start_index];
-        //                 let (end_column, end_row) = screen_positions[end_index];
-        //                 canvas.draw_line(start_column, start_row, end_column, end_row, 0x0000FFA0);
-        //             }
-        //         }
+        if state.current_model_idx == 1 {
+            for (index, point) in PENGUIN.into_iter().enumerate() {
+                let mut rotated_point = point;
+                rotated_point.rotate_xz(state.xz_angle);
+                let (normalized_x, normalized_y) = rotated_point.project(state.z_offset);
+                screen_positions[index] = canvas.normalized_to_screen(normalized_x, normalized_y);
+            }
 
+            for [first_corner, second_corner, third_corner] in PENGUIN_FACES {
+                let triangle_edges = [
+                    (first_corner, second_corner),
+                    (second_corner, third_corner),
+                    (third_corner, first_corner),
+                ];
+
+                for (start_index, end_index) in triangle_edges {
+                    let (start_column, start_row) = screen_positions[start_index];
+                    let (end_column, end_row) = screen_positions[end_index];
+                    canvas.draw_line(start_column, start_row, end_column, end_row, 0x0000FFA0);
+                }
+            }
+        } else
         // Render cube
+        {
+            for (index, point) in CUBE.into_iter().enumerate() {
+                let mut rotated_point = point;
+                rotated_point.rotate_xz(state.xz_angle);
+                rotated_point.project(state.z_offset);
+                let (normalized_x, normalized_y) = rotated_point.project(state.z_offset);
+                screen_positions[index] = canvas.normalized_to_screen(normalized_x, normalized_y);
+            }
 
-        for (index, point) in CUBE.into_iter().enumerate() {
-            let mut rotated_point = point;
-            rotated_point.rotate_xz(angle);
-            let (normalized_x, normalized_y) = rotated_point.project();
-            screen_positions[index] = canvas.normalized_to_screen(normalized_x, normalized_y);
-        }
-
-        for (start_index, end_index) in CUBE_EDGES {
-            let (start_column, start_row) = screen_positions[start_index];
-            let (end_column, end_row) = screen_positions[end_index];
-            canvas.draw_line(start_column, start_row, end_column, end_row, 0xDEADBEEF);
+            for (start_index, end_index) in CUBE_EDGES {
+                let (start_column, start_row) = screen_positions[start_index];
+                let (end_column, end_row) = screen_positions[end_index];
+                canvas.draw_line(start_column, start_row, end_column, end_row, 0x00FFA0FA);
+            }
         }
 
         window.update_with_buffer(canvas.pixels());

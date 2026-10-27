@@ -4,6 +4,8 @@ use std::ffi::c_void;
 use std::mem::zeroed;
 use std::ptr::null_mut;
 
+use crate::state::State;
+
 type LPCWSTR = *const u16;
 type LPWSTR = *mut u16;
 type HWND = *mut std::ffi::c_void;
@@ -61,6 +63,22 @@ struct BITMAPINFOHEADER {
 }
 
 #[repr(C)]
+struct CREATESTRUCTW {
+    pub lpCreateParams: *mut c_void,
+    pub hInstance: HINSTANCE,
+    pub hMenu: HMENU,
+    pub hwndParent: HWND,
+    pub cy: i32,
+    pub cx: i32,
+    pub y: i32,
+    pub x: i32,
+    pub style: i32,
+    pub lpszName: LPCWSTR,
+    pub lpszClass: LPCWSTR,
+    pub dwExStyle: DWORD,
+}
+
+#[repr(C)]
 struct RGBQUAD {
     blue: u8,
     green: u8,
@@ -94,6 +112,8 @@ unsafe extern "system" {
     fn DefWindowProcW(hwnd: HWND, msg: UINT, wp: WPARAM, lp: LPARAM) -> LRESULT;
     fn ShowWindow(hwnd: HWND, cmd: i32) -> BOOL;
     fn PeekMessageW(msg: *mut MSG, hwnd: HWND, min: UINT, max: UINT, remove: UINT) -> BOOL;
+    fn SetWindowLongPtrW(hwnd: HWND, index: i32, new_long: isize) -> isize;
+    fn GetWindowLongPtrW(hwnd: HWND, index: i32) -> isize;
     fn TranslateMessage(msg: *const MSG) -> BOOL;
     fn DispatchMessageW(msg: *const MSG) -> LRESULT;
     fn PostQuitMessage(code: i32);
@@ -123,17 +143,59 @@ unsafe extern "system" {
     ) -> i32;
 }
 
+const WM_CREATE: UINT = 0x0001;
 const WM_DESTROY: UINT = 0x0002;
 const WM_CLOSE: UINT = 0x0010;
+const WM_LBUTTONDOWN: UINT = 0x0201;
+const WM_RBUTTONDOWN: UINT = 0x0204;
+const WM_MOUSEWHEEL: UINT = 0x20A;
 const WS_OVERLAPPEDWINDOW: DWORD = 0x00CF0000;
 const SW_SHOW: i32 = 5;
 const PM_REMOVE: UINT = 1;
 const BI_RGB: DWORD = 0;
 const DIB_RGB_COLORS: UINT = 0;
 const SRCCOPY: DWORD = 0x00CC0020;
+const GWLP_USERDATA: i32 = -21;
 
 unsafe extern "system" fn wndproc(hwnd: HWND, msg: UINT, wp: WPARAM, lp: LPARAM) -> LRESULT {
     match msg {
+        WM_CREATE => unsafe {
+            let create_struct = lp as *const CREATESTRUCTW;
+            if !create_struct.is_null() {
+                let state_ptr = (*create_struct).lpCreateParams;
+                SetWindowLongPtrW(hwnd, GWLP_USERDATA, state_ptr as isize);
+            }
+            0
+        },
+        WM_LBUTTONDOWN => unsafe {
+            let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut State;
+            if !ptr.is_null() {
+                let state = &mut *ptr;
+                state.reverse_spin_direction();
+            }
+            0
+        },
+        WM_RBUTTONDOWN => unsafe {
+            let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut State;
+            if !ptr.is_null() {
+                let state = &mut *ptr;
+                state.switch_model();
+            }
+            0
+        },
+        WM_MOUSEWHEEL => unsafe {
+            let delta = ((wp >> 16) & 0xFFFF) as u16 as i16;
+            let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut State;
+            if !ptr.is_null() {
+                let state = &mut *ptr;
+                if delta > 0 {
+                    state.move_away_from_screen();
+                } else if delta < 0 {
+                    state.move_towards_screen();
+                }
+            }
+            0
+        },
         WM_CLOSE => unsafe {
             DestroyWindow(hwnd);
             0
@@ -157,7 +219,7 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(title: &str, width: usize, height: usize) -> Self {
+    pub fn new(title: &str, width: usize, height: usize, state: *mut State) -> Self {
         unsafe {
             let instance = GetModuleHandleW(null_mut());
 
@@ -191,7 +253,7 @@ impl Window {
                 null_mut(),
                 null_mut(),
                 instance,
-                null_mut(),
+                state as *mut c_void,
             );
 
             assert!(!hwnd.is_null(), "CreateWindowExW failed");

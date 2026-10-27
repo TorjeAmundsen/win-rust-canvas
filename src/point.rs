@@ -1,5 +1,3 @@
-use crate::DISTANCE_FROM_SCREEN;
-
 pub struct Point {
     pub x: f64,
     pub y: f64,
@@ -15,10 +13,7 @@ impl Point {
         self.z = x * sin + self.z * cos;
     }
 
-    pub fn project(&self) -> (f64, f64) {
-        (
-            self.x / (self.z + DISTANCE_FROM_SCREEN),
-            self.y / (self.z + DISTANCE_FROM_SCREEN),
-        )
+    pub fn project(&self, z_offset: f64) -> (f64, f64) {
+        (self.x / (self.z + z_offset), self.y / (self.z + z_offset))
     }
 }

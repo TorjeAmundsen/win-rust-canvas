@@ -14,7 +14,6 @@ use models::penguin::{PENGUIN, PENGUIN_FACES};
 const WIDTH: usize = 800;
 const HEIGHT: usize = 800;
 const FPS: u64 = 120;
-const DISTANCE_FROM_SCREEN: f64 = 1.0;
 
 pub struct Canvas {
     width: usize,
@@ -83,6 +82,7 @@ impl Canvas {
         end_column: f64,
         end_row: f64,
         color: u32,
+        size: usize,
     ) {
         let horizontal_distance = end_column - start_column;
         let vertical_distance = end_row - start_row;
@@ -99,7 +99,7 @@ impl Canvas {
             let row = (start_row + vertical_distance * progress).round();
 
             if column >= 0.0 && row >= 0.0 {
-                self.draw_point(column as usize, row as usize, color, 2);
+                self.draw_point(column as usize, row as usize, color, size);
             }
         }
     }
@@ -124,6 +124,8 @@ fn main() {
         xz_velocity: std::f64::consts::PI / 2.0,
         current_model_idx: 0,
         z_offset: 1.0,
+        color: [0x0020FA45, 0x00FA2045],
+        line_stroke_radius: 2,
     };
 
     let mut window = win32::Window::new("Simple 3D software render", WIDTH, HEIGHT, &mut state);
@@ -170,7 +172,14 @@ fn main() {
                 for (start_index, end_index) in triangle_edges {
                     let (start_column, start_row) = screen_positions[start_index];
                     let (end_column, end_row) = screen_positions[end_index];
-                    canvas.draw_line(start_column, start_row, end_column, end_row, 0x0000FFA0);
+                    canvas.draw_line(
+                        start_column,
+                        start_row,
+                        end_column,
+                        end_row,
+                        state.color[state.current_model_idx],
+                        state.line_stroke_radius,
+                    );
                 }
             }
         } else
@@ -187,7 +196,14 @@ fn main() {
             for (start_index, end_index) in CUBE_EDGES {
                 let (start_column, start_row) = screen_positions[start_index];
                 let (end_column, end_row) = screen_positions[end_index];
-                canvas.draw_line(start_column, start_row, end_column, end_row, 0x00FFA0FA);
+                canvas.draw_line(
+                    start_column,
+                    start_row,
+                    end_column,
+                    end_row,
+                    state.color[state.current_model_idx],
+                    state.line_stroke_radius,
+                );
             }
         }
 

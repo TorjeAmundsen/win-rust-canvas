@@ -7,7 +7,6 @@ use std::ptr::null_mut;
 use crate::state::State;
 
 type LPCWSTR = *const u16;
-type LPWSTR = *mut u16;
 type HWND = *mut std::ffi::c_void;
 type HDC = *mut c_void;
 type HINSTANCE = *mut c_void;
@@ -120,8 +119,8 @@ unsafe extern "system" {
     fn GetModuleHandleW(name: LPCWSTR) -> HINSTANCE;
     fn GetDC(hwnd: HWND) -> HDC;
     fn ReleaseDC(hwnd: HWND, dc: HDC) -> i32;
-    fn InvalidateRect(hwnd: HWND, rect: *const c_void, erase: BOOL) -> BOOL;
     fn DestroyWindow(hwnd: HWND) -> BOOL;
+    fn GetKeyState(nVirtKey: i32) -> i16;
 }
 
 #[link(name = "gdi32")]
@@ -146,6 +145,7 @@ unsafe extern "system" {
 const WM_CREATE: UINT = 0x0001;
 const WM_DESTROY: UINT = 0x0002;
 const WM_CLOSE: UINT = 0x0010;
+const WM_KEYDOWN: UINT = 0x0100;
 const WM_LBUTTONDOWN: UINT = 0x0201;
 const WM_RBUTTONDOWN: UINT = 0x0204;
 const WM_MOUSEWHEEL: UINT = 0x20A;
@@ -156,6 +156,24 @@ const BI_RGB: DWORD = 0;
 const DIB_RGB_COLORS: UINT = 0;
 const SRCCOPY: DWORD = 0x00CC0020;
 const GWLP_USERDATA: i32 = -21;
+
+// Key codes
+
+const VK_SHIFT: i32 = 0x10;
+
+const KEY_1: WPARAM = 0x31;
+const KEY_2: WPARAM = 0x32;
+const KEY_3: WPARAM = 0x33;
+const KEY_4: WPARAM = 0x34;
+const KEY_5: WPARAM = 0x35;
+const KEY_6: WPARAM = 0x36;
+const KEY_7: WPARAM = 0x37;
+const KEY_8: WPARAM = 0x38;
+const KEY_9: WPARAM = 0x39;
+
+const KEY_R: WPARAM = 0x52;
+const KEY_G: WPARAM = 0x47;
+const KEY_B: WPARAM = 0x42;
 
 unsafe extern "system" fn wndproc(hwnd: HWND, msg: UINT, wp: WPARAM, lp: LPARAM) -> LRESULT {
     match msg {
@@ -192,6 +210,50 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: UINT, wp: WPARAM, lp: LPARAM)
                     state.move_away_from_screen();
                 } else if delta < 0 {
                     state.move_towards_screen();
+                }
+            }
+            0
+        },
+        WM_KEYDOWN => unsafe {
+            let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut State;
+            if !ptr.is_null() {
+                let state = &mut *ptr;
+                if wp == KEY_R {
+                    if GetKeyState(VK_SHIFT) < 0 {
+                        state.decrease_red();
+                    } else {
+                        state.increase_red();
+                    }
+                } else if wp == KEY_G {
+                    if GetKeyState(VK_SHIFT) < 0 {
+                        state.decrease_green();
+                    } else {
+                        state.increase_green();
+                    }
+                } else if wp == KEY_B {
+                    if GetKeyState(VK_SHIFT) < 0 {
+                        state.decrease_blue();
+                    } else {
+                        state.increase_blue();
+                    }
+                } else if wp == KEY_1 {
+                    state.set_line_stroke_radius(1);
+                } else if wp == KEY_2 {
+                    state.set_line_stroke_radius(2);
+                } else if wp == KEY_3 {
+                    state.set_line_stroke_radius(3);
+                } else if wp == KEY_4 {
+                    state.set_line_stroke_radius(4);
+                } else if wp == KEY_5 {
+                    state.set_line_stroke_radius(5);
+                } else if wp == KEY_6 {
+                    state.set_line_stroke_radius(6);
+                } else if wp == KEY_7 {
+                    state.set_line_stroke_radius(7);
+                } else if wp == KEY_8 {
+                    state.set_line_stroke_radius(8);
+                } else if wp == KEY_9 {
+                    state.set_line_stroke_radius(9);
                 }
             }
             0

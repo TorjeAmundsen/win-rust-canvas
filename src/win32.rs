@@ -218,42 +218,57 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: UINT, wp: WPARAM, lp: LPARAM)
             let ptr = GetWindowLongPtrW(hwnd, GWLP_USERDATA) as *mut State;
             if !ptr.is_null() {
                 let state = &mut *ptr;
-                if wp == KEY_R {
-                    if GetKeyState(VK_SHIFT) < 0 {
-                        state.decrease_red();
-                    } else {
-                        state.increase_red();
+                let shift_held = GetKeyState(VK_SHIFT) < 0;
+                match wp {
+                    KEY_R => {
+                        if shift_held {
+                            state.decrease_red();
+                        } else {
+                            state.increase_red();
+                        }
                     }
-                } else if wp == KEY_G {
-                    if GetKeyState(VK_SHIFT) < 0 {
-                        state.decrease_green();
-                    } else {
-                        state.increase_green();
+                    KEY_G => {
+                        if shift_held {
+                            state.decrease_green();
+                        } else {
+                            state.increase_green();
+                        }
                     }
-                } else if wp == KEY_B {
-                    if GetKeyState(VK_SHIFT) < 0 {
-                        state.decrease_blue();
-                    } else {
-                        state.increase_blue();
+                    KEY_B => {
+                        if shift_held {
+                            state.decrease_blue();
+                        } else {
+                            state.increase_blue();
+                        }
                     }
-                } else if wp == KEY_1 {
-                    state.set_line_stroke_radius(1);
-                } else if wp == KEY_2 {
-                    state.set_line_stroke_radius(2);
-                } else if wp == KEY_3 {
-                    state.set_line_stroke_radius(3);
-                } else if wp == KEY_4 {
-                    state.set_line_stroke_radius(4);
-                } else if wp == KEY_5 {
-                    state.set_line_stroke_radius(5);
-                } else if wp == KEY_6 {
-                    state.set_line_stroke_radius(6);
-                } else if wp == KEY_7 {
-                    state.set_line_stroke_radius(7);
-                } else if wp == KEY_8 {
-                    state.set_line_stroke_radius(8);
-                } else if wp == KEY_9 {
-                    state.set_line_stroke_radius(9);
+                    KEY_1 => {
+                        state.set_line_stroke_radius(1);
+                    }
+                    KEY_2 => {
+                        state.set_line_stroke_radius(2);
+                    }
+                    KEY_3 => {
+                        state.set_line_stroke_radius(3);
+                    }
+                    KEY_4 => {
+                        state.set_line_stroke_radius(4);
+                    }
+                    KEY_5 => {
+                        state.set_line_stroke_radius(5);
+                    }
+                    KEY_6 => {
+                        state.set_line_stroke_radius(6);
+                    }
+                    KEY_7 => {
+                        state.set_line_stroke_radius(7);
+                    }
+                    KEY_8 => {
+                        state.set_line_stroke_radius(8);
+                    }
+                    KEY_9 => {
+                        state.set_line_stroke_radius(9);
+                    }
+                    _ => {}
                 }
             }
             0

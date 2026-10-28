@@ -3,6 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+mod color;
 mod models;
 mod point;
 mod state;
@@ -10,6 +11,8 @@ mod win32;
 
 use models::cube::{CUBE, CUBE_EDGES};
 use models::penguin::{PENGUIN, PENGUIN_FACES};
+
+use crate::color::Color;
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 800;
@@ -124,8 +127,9 @@ fn main() {
         xz_velocity: std::f64::consts::PI / 2.0,
         current_model_idx: 0,
         z_offset: 1.0,
-        color: [0x0020FA45, 0x00FA2045],
+        color: [Color::from_u32(0x0020FA45), Color::from_u32(0x00FA2045)],
         line_stroke_radius: 2,
+        is_color_rotating: false,
     };
 
     let mut window = win32::Window::new("Simple 3D software render", WIDTH, HEIGHT, &mut state);
@@ -177,7 +181,7 @@ fn main() {
                         start_row,
                         end_column,
                         end_row,
-                        state.color[state.current_model_idx],
+                        state.current_color_u32(),
                         state.line_stroke_radius,
                     );
                 }
@@ -201,7 +205,7 @@ fn main() {
                     start_row,
                     end_column,
                     end_row,
-                    state.color[state.current_model_idx],
+                    state.current_color_u32(),
                     state.line_stroke_radius,
                 );
             }

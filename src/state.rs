@@ -1,15 +1,21 @@
+use crate::color::Color;
+
 pub struct State {
     pub xz_angle: f64,
     pub xz_velocity: f64,
     pub current_model_idx: usize,
     pub z_offset: f64,
-    pub color: [u32; 2],
+    pub color: [Color; 2],
     pub line_stroke_radius: usize,
+    pub is_color_rotating: bool,
 }
 
 impl State {
     pub fn advance(&mut self, delta_time: f64) {
         self.xz_angle += self.xz_velocity * delta_time;
+        if self.is_color_rotating {
+            self.color[self.current_model_idx].shift_hue(90.0 * delta_time * self.xz_velocity);
+        }
     }
 
     pub fn reverse_spin_direction(&mut self) {
@@ -30,66 +36,94 @@ impl State {
         self.z_offset = self.z_offset.max(0.6);
     }
 
+    pub fn current_color_u32(&self) -> u32 {
+        self.color[self.current_model_idx].as_u32_argb()
+    }
+
     pub fn increase_red(&mut self) {
-        let mut red = (self.color[self.current_model_idx] & 0x00FF0000) >> 16;
+        if self.is_color_rotating {
+            return;
+        }
+
+        let mut red = (self.current_color_u32() & 0x00FF0000) >> 16;
         red = (red + 5).min(255);
-        let cleared = self.color[self.current_model_idx] & !0x00FF0000;
+        let cleared = self.current_color_u32() & !0x00FF0000;
         let shifted = (red & 0xFF) << 16;
-        self.color[self.current_model_idx] = cleared | shifted;
+        self.color[self.current_model_idx].set_u32(cleared | shifted);
         self.print_color();
     }
 
     pub fn decrease_red(&mut self) {
-        let mut red = (self.color[self.current_model_idx] & 0x00FF0000) >> 16;
+        if self.is_color_rotating {
+            return;
+        }
+
+        let mut red = (self.current_color_u32() & 0x00FF0000) >> 16;
         red = red.wrapping_sub(5);
         if red > 255 {
             red = 0;
         }
-        let cleared = self.color[self.current_model_idx] & !0x00FF0000;
+        let cleared = self.current_color_u32() & !0x00FF0000;
         let shifted = (red & 0xFF) << 16;
-        self.color[self.current_model_idx] = cleared | shifted;
+        self.color[self.current_model_idx].set_u32(cleared | shifted);
         self.print_color();
     }
 
     pub fn increase_green(&mut self) {
-        let mut green = (self.color[self.current_model_idx] & 0x0000FF00) >> 8;
+        if self.is_color_rotating {
+            return;
+        }
+
+        let mut green = (self.current_color_u32() & 0x0000FF00) >> 8;
         green = (green + 5).min(255);
-        let cleared = self.color[self.current_model_idx] & !0x0000FF00;
+        let cleared = self.current_color_u32() & !0x0000FF00;
         let shifted = (green & 0xFF) << 8;
-        self.color[self.current_model_idx] = cleared | shifted;
+        self.color[self.current_model_idx].set_u32(cleared | shifted);
         self.print_color();
     }
 
     pub fn decrease_green(&mut self) {
-        let mut green = (self.color[self.current_model_idx] & 0x0000FF00) >> 8;
+        if self.is_color_rotating {
+            return;
+        }
+
+        let mut green = (self.current_color_u32() & 0x0000FF00) >> 8;
         green = green.wrapping_sub(5);
         if green > 255 {
             green = 0;
         }
-        let cleared = self.color[self.current_model_idx] & !0x0000FF00;
+        let cleared = self.current_color_u32() & !0x0000FF00;
         let shifted = (green & 0xFF) << 8;
-        self.color[self.current_model_idx] = cleared | shifted;
+        self.color[self.current_model_idx].set_u32(cleared | shifted);
         self.print_color();
     }
 
     pub fn increase_blue(&mut self) {
-        let mut blue = self.color[self.current_model_idx] & 0x000000FF;
+        if self.is_color_rotating {
+            return;
+        }
+
+        let mut blue = self.current_color_u32() & 0x000000FF;
         blue = (blue + 5).min(255);
-        let cleared = self.color[self.current_model_idx] & !0x000000FF;
+        let cleared = self.current_color_u32() & !0x000000FF;
         let shifted = blue & 0xFF;
-        self.color[self.current_model_idx] = cleared | shifted;
+        self.color[self.current_model_idx].set_u32(cleared | shifted);
         self.print_color();
     }
 
     pub fn decrease_blue(&mut self) {
-        let mut blue = self.color[self.current_model_idx] & 0x000000FF;
+        if self.is_color_rotating {
+            return;
+        }
+
+        let mut blue = self.current_color_u32() & 0x000000FF;
         blue = blue.wrapping_sub(5);
         if blue > 255 {
             blue = 0;
         }
-        let cleared = self.color[self.current_model_idx] & !0x000000FF;
+        let cleared = self.current_color_u32() & !0x000000FF;
         let shifted = blue & 0xFF;
-        self.color[self.current_model_idx] = cleared | shifted;
+        self.color[self.current_model_idx].set_u32(cleared | shifted);
         self.print_color();
     }
 
@@ -101,7 +135,11 @@ impl State {
         self.line_stroke_radius = stroke_size;
     }
 
+    pub fn toggle_color_rotation(&mut self) {
+        self.is_color_rotating = !self.is_color_rotating;
+    }
+
     fn print_color(&self) {
-        println!("RGB: {:06x}", self.color[self.current_model_idx]);
+        println!("RGB: {:06x}", self.current_color_u32());
     }
 }

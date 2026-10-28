@@ -161,6 +161,7 @@ const GWLP_USERDATA: i32 = -21;
 
 const VK_SHIFT: i32 = 0x10;
 
+const KEY_0: WPARAM = 0x30;
 const KEY_1: WPARAM = 0x31;
 const KEY_2: WPARAM = 0x32;
 const KEY_3: WPARAM = 0x33;
@@ -240,6 +241,9 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: UINT, wp: WPARAM, lp: LPARAM)
                         } else {
                             state.increase_blue();
                         }
+                    }
+                    KEY_0 => {
+                        state.toggle_color_rotation();
                     }
                     KEY_1 => {
                         state.set_line_stroke_radius(1);
